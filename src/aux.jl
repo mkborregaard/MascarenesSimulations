@@ -2,7 +2,7 @@
 # Build auxiliary rasters
 
 function load_aux(; masks, dems, landcover_paths, aggfactor, last_year)
-    sim_setup_file = joinpath(basepath, "cache/sym_setup_$aggfactor.jld2")
+    sim_setup_file = joinpath(basepath, "cache/sim_setup_$aggfactor.jld2")
     auxs = if isfile(sim_setup_file)
         println("Loading aux data from jld...")
         let
