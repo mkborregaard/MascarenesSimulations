@@ -51,7 +51,7 @@ end
 function _predict_timeline(endemic_ruleset::Ruleset, island, pred_response; range_times, kw...)
     output_kw = island.output_kw
     aux = output_kw.aux
-    pred_suscept = predator_suceptibility(pred_response, aux.endemic_traits)
+    pred_suscept = predator_susceptibility(pred_response, aux.endemic_traits)
     (; pred_pop, pred_effect) = aux
     generate_predator_effect!(tanh, pred_effect, pred_pop, pred_suscept)
     output = TransformedOutput(island.endemic_init; output_kw...) do f, (i, t)
