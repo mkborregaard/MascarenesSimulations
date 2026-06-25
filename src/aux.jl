@@ -19,6 +19,7 @@ function load_aux(; masks, dems, landcover_paths, aggfactor, last_year, mask_pat
         println("Loading aux data from jld...")
         let
             f = jldopen(sim_setup_file, "r")
+            # pred_pops_aux = f["pred_pops_aux"];
             auxs = f["auxs"]
             close(f)
             auxs
@@ -34,13 +35,15 @@ function load_aux(; masks, dems, landcover_paths, aggfactor, last_year, mask_pat
             end
             apply_mask_patches!(masks, mask_patches)
             auxs = agg_aux(masks, dems, lc_predictions, aggfactor, last_year)
-            jldsave(sim_setup_file; auxs)
+            jldsave(sim_setup_file;
+                auxs#, pred_pops_aux,
+            );
             auxs
         end
     end
 end
 
-# Merge landcover to a single integer layer for Makie visualisation.
+# Merge landcover to a single layer for makie visualisation
 function graphic_landcover(auxs)
     map(auxs) do aux
         map(aux.lc) do lcs

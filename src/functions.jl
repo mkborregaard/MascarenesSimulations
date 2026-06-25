@@ -148,6 +148,7 @@ function extinction_dates_from_sim(timeline, island, obs=nothing;
 end
 
 function extinction_dates_from_tables(tables, EndemicNVs, island_keys; last_year, extant_extension)
+    # Extract extinction dates
     map(tables, EndemicNVs, island_keys) do table, EndemicNV, key
         extinction_dates_from_table(table, EndemicNV, key; last_year, extant_extension)
     end
@@ -155,6 +156,7 @@ end
 
 function extinction_dates_from_table(table, EndemicNV, key; last_year, extant_extension)
     map(table[!, Symbol(key, :_extinct)]) do x
+        # use the last year of the simulation + extan_extinction as the "not extinct yet" extinction date
         ismissing(x) ? last_year + extant_extension : first(parse_year_range(x))
     end |> EndemicNV
 end

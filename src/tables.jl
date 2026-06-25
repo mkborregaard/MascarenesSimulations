@@ -5,6 +5,7 @@ using ConstructionBase
 # parse_year_range and is_present are defined in common.jl
 
 function load_tables()
+    # Import tabular data
     tables_path = realpath(joinpath(dirname(pathof(MascarenesSimulations)), "../tables"))
     pred_df          = CSV.read("$tables_path/invasives.csv",    DataFrame)
     introductions_df = CSV.read("$tables_path/introductions.csv", DataFrame)
@@ -20,7 +21,7 @@ function load_tables()
         df
     end
     island_endemic_tables = map(island_tables) do tbl
-        # TODO: add missing-mass rows and remove the Mass filter
+        # TODO add missing mass rows and remove the missing Mass filter
         DataFrame(subset(tbl, :Origin => ByRow(==("Endemic")), :Mass => ByRow(!ismissing); skipmissing=true))
     end
 
@@ -29,5 +30,21 @@ function load_tables()
     island_endemic_names = map(get_species_names, island_endemic_tables)
     all_endemic_names    = union(island_endemic_names...)
 
+    # nspecies = length(all_endemic_names)
+    # nislandspecies = map(length, island_endemic_names)
+    # nislandcounts = map(island_names, island_endemic_names) do k, names
+    #     isonisland = map(names) do name
+    #         map(island_names -> name in island_names, island_endemic_names)
+    #     end
+    #     per_island = map(island_names) do k1
+    #         count(x -> x[k1], isonisland)
+    #     end
+    #     onall = count(all, isonisland)
+    #     per_island = map(x -> x - onall, per_island)
+    #     endemic = per_island[k] - sum(per_island[Not(k)])
+    #     out = (; per_island..., onall)
+    #     # Adjust out so current island is only endemics
+    #     ConstructionBase.setproperties(out, NamedTuple{(k,)}((endemic,)))
+    # end
     (; pred_df, introductions_df, island_names, island_endemic_names, island_tables, island_endemic_tables)
 end

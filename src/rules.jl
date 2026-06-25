@@ -28,12 +28,13 @@ end
 end
 
 function calc_carrycaps(local_inputs, populations, carrycap, carrycap_scaling)
-    relative_pop = NamedTuple(populations ./ carrycap)
+    relative_pop = NamedTuple(populations ./ carrycap) # combine populations
     params = merge(relative_pop, NamedTuple(local_inputs))
     scaling = map(carrycap_scaling) do val_f
         f = DynamicGrids._unwrap(val_f)
         (oneunit(eltype(populations)) + f(params))
     end |> NamedVector
+    # Carrycap cant be zero for numerical reasons, but make the minimum very small
     absolute_min_carrycap = oneunit(eltype(carrycap)) .* MIN_CARRYCAP_FACTOR
     new_carrycaps = max.(absolute_min_carrycap, carrycap .* scaling)
     return new_carrycaps
@@ -60,11 +61,13 @@ end
 @inline function DynamicGrids.applyrule(data, rule::ExtirpationRisks, endemic_presences, I)
     recuperation_rates = get(data, rule.recuperation_rates)
 
+    # Get the effect of predators on each endemic
     pred_effect = if isnothing(rule.pred_effect)
         pred_relative_pop = get(data, rule.pred_pop, I) ./ rule.pred_carrycap
         pred_suscept = get(data, rule.pred_suscept)
         map(rule.f, predator_effect(pred_relative_pop, pred_suscept))
     else
+        # We have already precalculated the effect
         get(data, rule.pred_effect, I)
     end
 
@@ -86,7 +89,7 @@ end
     return updated_presence
 end
 
-# Causes-tracking version: reads and writes both endemic_presence and causes grids.
+# This version tracks extinction causes in a separate grid
 @inline function DynamicGrids.applyrule(data, rule::ExtirpationRisks{Grids,Grids}, (endemic_presences, causes), I) where Grids<:Tuple
     recuperation_rates = get(data, rule.recuperation_rates)
 
@@ -96,6 +99,7 @@ end
         Base.reinterpret(UInt8, x) + Base.reinterpret(UInt8, y)
     end
 
+    # Get the effect of predators on each endemic
     pred_relative_pop = get(data, rule.pred_pop, I) ./ rule.pred_carrycap .* PRED_POP_PRESSURE_SCALE
     pred_suscept = get(data, rule.pred_suscept)
     pred_effects = predator_effects(pred_relative_pop, pred_suscept)
@@ -132,6 +136,7 @@ end
 @inline function DynamicGrids.modifyrule(rule::ExtirpationRisks, data::AbstractSimData)
     if isnothing(rule.pred_effect)
         pred_response = get(data, rule.pred_response)
+        # mass_response = get(data, rule.mass_response)
         traits = get(data, rule.traits)
         @set! rule.pred_suscept = predator_susceptibility(pred_response, traits)
     end
@@ -217,9 +222,17 @@ function build_rules(pred_df, aggfactor;
     6. pigs probably don't care about any of these things and just go wherever they like.
     =#
 
-    # These parameters are from qualitative and quantitative literature without
-    # enough context to use the numbers precisely.
-    # Refs: Smucker et al 2000 - Hawaii cats, rats, mice
+    # Parameters
+
+
+
+    # These are parametries from reading qualitative literature and quantitative literature without
+    # enough context to really use the number.
+    # Maybe we should fit them to some observations in specific points at specific times.
+    # Refs: Smucker et al 2000 - Hawaiii cats, rats, mice
+
+    # These need to somewhat balance low growth rates. They are almost totally made up.
+    # The units are in pixels - it needs fixing to the aggregation size.
 
     PredNV     = NamedVector{pred_keys,length(pred_keys)}
     pred_rmax  = Float32.(PredNV(pred_df.rmax))
@@ -237,7 +250,12 @@ function build_rules(pred_df, aggfactor;
         cellsize=1.0f0,
     )
     pred_kernels = map(spread_rate) do s
-        DispersalKernel(stencil=moore, formulation=ExponentialKernel(s), cellsize=1.0f0)
+        DispersalKernel(
+            stencil=moore,
+            # formulation=ExponentialKernel(Param(s, bounds=(0.000000000001, 100.0)))
+            formulation=ExponentialKernel(s),
+            cellsize=1.0f0,
+        )
     end
 
     # Rules
@@ -252,6 +270,8 @@ function build_rules(pred_df, aggfactor;
         timestep=1,
         nsteps_type=Float32,
     )
+    #### Rules ##########################################################333
+
     introduction_rule = let introductions_aux=Aux{:introductions}()
         SetGrid{:pred_pop}() do data, pred_pop, t
             D = dims(DG.init(data).pred_pop)
@@ -261,6 +281,8 @@ function build_rules(pred_df, aggfactor;
                 if intro.year == current_year
                     p = intro.geometry
                     I = DimensionalData.dims2indices(D, (X(Contains(p.X)), Y(Contains(p.Y))))[1:2]
+                    # x = view(pred_pop, I..., :) .+ (intro.init,)
+                    # @show x I size(intro.init) size(pred_pop)
                     pred_pop[I..., :] .= view(pred_pop, I..., :) .+ (intro.init,)
                 end
             end
@@ -269,6 +291,7 @@ function build_rules(pred_df, aggfactor;
     clearing_rule = let landcover=Aux{:landcover}()
         Cell{:endemic_presence}() do data, presences, I
             lc = get(data, landcover, I)
+            # 20% native and below kills everything
             presences .& (lc.native > CLEARING_NATIVE_THRESHOLD)
         end
     end
@@ -285,8 +308,8 @@ function build_rules(pred_df, aggfactor;
             elev_nbrs = DG.neighbors(dem, I)
             @inbounds elev_center = dem[I...]
 
-            sum = zero(Ns)
-            cellsize = 100 * aggfactor  # cell size in meters at base 100m resolution
+            sum = zero(Ns) # TODO needs cell size here
+            cellsize = (100 * aggfactor)
 
             # Randomise hood starting position to avoid directional artifacts in output
             start = rand(0:length(hood)-1)
@@ -407,10 +430,10 @@ function build_island(key, endemic_table, aux, introductions_df, shared;
     pred_carrycap = map(_ -> carrycap, aux.mask)
     # Every species is everywhere initially, in this dumb model
     endemic_presence = map(aux.mask) do m
-        map(_ -> m, traits.ismammal) # traits.ismammal is used only as a shape source
+        map(_ -> m, traits.ismammal) # traits.mammal is just as a map source, not used
     end
     causes = map(aux.mask) do m
-        map(_ -> zero(pred_rmax), traits.ismammal)
+        map(_ -> zero(pred_rmax), traits.ismammal) # traits.mammal is just as a map source, not used
     end
 
     pred_effect = if isnothing(pred_pops_aux)
@@ -429,6 +452,7 @@ function build_island(key, endemic_table, aux, introductions_df, shared;
     output_kw = (;
         aux=(;
             introductions = island_introductions,
+            # habitat_requirement=endemictraits.habitat_requirements,
             dem           = stencil_dem,
             recuperation_rates,
             pred_pop      = pred_pops_aux,

@@ -33,12 +33,13 @@ landcover_paths = (
 # Each entry names an island and a tuple of DimensionalData selectors.
 # Verify coordinates against source data if the underlying rasters are ever reprocessed.
 mask_patches = (
-    # Rodrigues: two small islets outside the main island, outside the simulation domain
+    # # Remove islands of rodrigues
     (; island=:rod, dims=(X(Between(60.0, 63.33)), Y(Between(-19.775, -19.675)))),
     (; island=:rod, dims=(X(Between(63.0,  65.0)),  Y(Between(-19.8,   -19.775)))),
-    # Mauritius: single-row artefact from SRTM tile join
+    # And one pixel in Muaritius that creates a bug, false the whole row
     (; island=:mus, dims=(Y(Between(-19.985, -19.0)),)),
 )
+# Makie.plot(masks.mus)
 
 # Load data
 (; pred_df, introductions_df, island_names, island_endemic_names, island_tables, island_endemic_tables) = load_tables()
