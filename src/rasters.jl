@@ -23,19 +23,20 @@ function load_rasters()
 
     println("Getting DEMs...")
     tiles = getraster(SRTM; bounds=island_bounds.mus)
-    dem1 = Raster(tiles[1]; name=:DEM)
-    dem2 = Raster(tiles[2]; name=:DEM)
+    # Open tiles lazily and only read the island subsets
+    dem1 = Raster(tiles[1]; name=:DEM, lazy=true)
+    dem2 = Raster(tiles[2]; name=:DEM, lazy=true)
     border_selectors = map(island_bounds) do bb
         (X(Between(bb[1])), Y(Between(bb[2])))
     end
     # Mauritius is right over the split in the tiles
-    m1 = view(dem1, border_selectors.mus...)
-    m2 = view(dem2, border_selectors.mus...)
+    m1 = read(view(dem1, border_selectors.mus...))
+    m2 = read(view(dem2, border_selectors.mus...))
     mus_dem = replace_missing(trim(cat(m1, m2; dims=Y); pad=10))
     reu_tile  = getraster(SRTM; bounds=island_bounds.reu)[1]
-    reu_dem = replace_missing(trim(view(Raster(reu_tile), border_selectors.reu...); pad=10))
+    reu_dem = replace_missing(trim(read(view(Raster(reu_tile; lazy=true), border_selectors.reu...)); pad=10))
     rod_tile = getraster(SRTM; bounds=island_bounds.rod)[1]
-    rod_dem = replace_missing(trim(view(Raster(rod_tile), border_selectors.rod...); pad=10))
+    rod_dem = replace_missing(trim(read(view(Raster(rod_tile; lazy=true), border_selectors.rod...)); pad=10))
 
     dems = map(fix_order, (mus=mus_dem, reu=reu_dem, rod=rod_dem))
     elevation = map(d -> d .* u"m", dems)
