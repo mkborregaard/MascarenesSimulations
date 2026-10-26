@@ -4,6 +4,7 @@ using MascarenesSimulations: lc_categories, define_simulations, load_tables
 using DynamicGrids
 using Rasters
 using DimensionalData
+using DimensionalData.Lookups
 import LandscapeChange: NamedVector
 
 # ---------------------------------------------------------------------------
@@ -33,8 +34,9 @@ import LandscapeChange: NamedVector
         #   black_rat  1560  (57.7228, -20.32)
         #   cat        1688  (57.5012, -20.1597) and (57.7228, -20.32)
         #   norway_rat 1733  (57.5012, -20.1597)
-        xs = X(LinRange(57.1, 57.9, 7))
-        ys = Y(LinRange(-20.6, -19.95, 7))
+        # Intervals sampling so the introduction rule can locate cells with `Contains`
+        xs = X(Sampled(LinRange(57.1, 57.9, 7); sampling=Intervals(Center())))
+        ys = Y(Sampled(LinRange(-20.6, -19.95, 7); sampling=Intervals(Center())))
         ti = Ti(Sampled(1500:1:2020; sampling=Intervals(Start())))
 
         mask = Raster(fill(true,  7, 7),       (xs, ys); name=:mask, missingval=false)
@@ -65,8 +67,8 @@ import LandscapeChange: NamedVector
 
         @test_nowarn sim!(output, ruleset; printframe=false)
 
-        # 1558..1562 = 5 stored frames
-        @test length(output) == 5
+        # build_island uses a ResultOutput, which stores only the final frame
+        @test length(output) == 1
 
         # Grid keys are present in every output frame
         final = last(output)
