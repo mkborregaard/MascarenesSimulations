@@ -603,7 +603,7 @@ version = "0.4.25"
 
 [[deps.Dispersal]]
 deps = ["Dates", "Distributions", "DocStringExtensions", "DynamicGrids", "LinearAlgebra", "Reexport", "Statistics", "Stencils"]
-git-tree-sha1 = "8b544ac216b6645fd944f04c029bdbb241309f43"
+git-tree-sha1 = "5c911b708e62b7ace7a34f1b38cb4909d53426ef"
 repo-rev = "maintained"
 repo-url = "https://github.com/mkborregaard/Dispersal.jl"
 uuid = "8797f018-3445-11e9-3969-c13eb94a0661"
@@ -661,7 +661,7 @@ version = "1.4.1"
 
 [[deps.DynamicGrids]]
 deps = ["Adapt", "Colors", "ConstructionBase", "Crayons", "Dates", "DimensionalData", "DocStringExtensions", "FileIO", "FreeTypeAbstraction", "KernelAbstractions", "LinearAlgebra", "ModelParameters", "REPL", "Random", "Reexport", "Setfield", "StaticArrays", "Stencils", "Test", "UnicodeGraphics"]
-git-tree-sha1 = "c75588df55c46e7e7d4990266eae6dd1db0a73b3"
+git-tree-sha1 = "fbb39fa40262e8f04cec189fc510f34a7a98e6c9"
 repo-rev = "maintained"
 repo-url = "https://github.com/mkborregaard/DynamicGrids.jl"
 uuid = "a5dba43e-3abc-5203-bfc5-584ca68d3f5b"
@@ -1427,7 +1427,7 @@ version = "1.4.1"
 
 [[deps.LandscapeChange]]
 deps = ["Dates", "Distributions", "DynamicGrids", "LinearAlgebra", "Rasters", "Reexport", "Statistics"]
-git-tree-sha1 = "b73ec03f0ff63b5b2150d0b37dc942424b30b2c9"
+git-tree-sha1 = "785eb4bf639d690953b136f1432809a4e852b32e"
 repo-rev = "maintained"
 repo-url = "https://github.com/mkborregaard/LandscapeChange.jl"
 uuid = "10a95938-cbff-4ff0-a2a3-33d289cf79a5"

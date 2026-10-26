@@ -1,6 +1,6 @@
 # Tests against the committed Manifest, and weekly against the newest
 # compatible dependencies, including the latest commits on the `maintained`
-# branches of the mkborregaard copies of DynamicGrids, Dispersal and
+# branches of the mkborregaard forks of DynamicGrids, Dispersal and
 # LandscapeChange (which sync from upstream on Mondays at 05:23 UTC).
 name: CI
 

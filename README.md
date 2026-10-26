@@ -9,11 +9,11 @@ To run:
 
 ## Dependencies
 
-DynamicGrids, Dispersal and LandscapeChange come from maintained copies at
+DynamicGrids, Dispersal and LandscapeChange come from forks at
 [mkborregaard/DynamicGrids.jl](https://github.com/mkborregaard/DynamicGrids.jl),
 [mkborregaard/Dispersal.jl](https://github.com/mkborregaard/Dispersal.jl) and
 [mkborregaard/LandscapeChange.jl](https://github.com/mkborregaard/LandscapeChange.jl)
-(the `maintained` branch, set in `[sources]` in `Project.toml`). Each copy merges
+(the `maintained` branch, set in `[sources]` in `Project.toml`). Each fork merges
 its upstream branch weekly. `Pkg.update()` picks up the newest commits, and CI
 checks the tests against them every week.
 
