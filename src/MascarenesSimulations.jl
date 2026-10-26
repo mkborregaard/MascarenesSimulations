@@ -26,7 +26,7 @@ using Tables
 using ThreadsX
 using Unitful
 
-using DimensionalData.LookupArrays
+using DimensionalData.Lookups
 using Rasters: Between, trim, Band
 
 const DG = DynamicGrids

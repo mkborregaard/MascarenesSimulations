@@ -27,10 +27,12 @@ function load_aux(; masks, dems, landcover_paths, aggfactor, last_year, mask_pat
     else
         let
             # netcdf has the annoying center locus for time
+            # checkmem=false: Rasters compares against Sys.free_memory(), which
+            # is far too low on macOS, and lazy loading is very slow here
             lc_predictions = map(landcover_paths) do path
-                RasterStack(path) |>
+                RasterStack(path; checkmem=false) |>
                     x -> maybeshiftlocus(Start(), x) |>
-                    x -> DD.set(x, Ti => Int.(lookup(x, Ti))) |>
+                    x -> DD.set(x, Ti => Sampled(Int.(lookup(x, Ti)); span=Regular(1), sampling=Intervals(Start()))) |>
                     x -> rebuild(Rasters.modify(BitArray, x); missingval=false)
             end
             apply_mask_patches!(masks, mask_patches)

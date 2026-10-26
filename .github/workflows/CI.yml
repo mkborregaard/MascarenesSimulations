@@ -1,0 +1,58 @@
+# Tests against the committed Manifest, and weekly against the newest
+# compatible dependencies, including the latest commits on the `maintained`
+# branches of the mkborregaard copies of DynamicGrids, Dispersal and
+# LandscapeChange (which sync from upstream on Mondays at 05:23 UTC).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "41 7 * * 1"
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+  issues: write
+
+jobs:
+  test:
+    name: ${{ matrix.deps }} dependencies
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        deps: [manifest, latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: "1"
+      - uses: julia-actions/cache@v2
+      - name: Update to the newest compatible dependencies
+        if: matrix.deps == 'latest'
+        run: julia --project=. -e 'using Pkg; Pkg.update()'
+      - uses: julia-actions/julia-buildpkg@v1
+      - uses: julia-actions/julia-runtest@v1
+        with:
+          prefix: xvfb-run -s '-screen 0 1024x768x24'
+      - name: Open an issue if the newest dependencies break the tests
+        if: failure() && matrix.deps == 'latest' && github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Forks start with issues disabled; GitHub still emails about the failed run
+          if [ "$(gh api "repos/$GITHUB_REPOSITORY" -q .has_issues)" != "true" ]; then
+            echo "Issues are disabled for this repository, not opening one"
+            exit 0
+          fi
+          title="Tests fail with the newest dependencies"
+          body="The weekly run against the newest dependencies failed: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          existing=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "in:title \"$title\"" --json number -q '.[0].number')
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "$body"
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body "$body"
+          fi
