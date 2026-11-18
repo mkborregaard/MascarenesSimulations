@@ -12,6 +12,10 @@ function agg_aux(mask_orig::AbstractArray, dem_orig, lc_orig, aggfactor, last_ye
     # rgh = Float32.(replace_missing(Rasters.aggregate(maximum, min.(roughness(replace_missing(dem_orig, 0)), 500)./ 500, aggfactor), NaN))
     dem = Float32.(replace_missing(Rasters.aggregate(Rasters.Center(), dem_orig, aggfactor; skipmissingval=true), 0)) .* mask
     lc_ag = Rasters.aggregate(mean, rebuild(lc_orig; missingval=nothing), (X(aggfactor), Y(aggfactor)); skipmissingval=true)
+    # The grids match cell for cell, but aggregate(Center(), ...) labels each block
+    # by its centre pixel and aggregate(mean, ...) by its start, so use the mask's
+    # lookups for landcover too, or broadcasting them together fails
+    lc_ag = DD.set(lc_ag, X => lookup(mask, X), Y => lookup(mask, Y))
     lc_ag1 = Rasters.extend(lc_ag; to=(Ti(Sampled(1500:1:2020; sampling=Intervals(Start())))), missingval=false)
     map(layers(lc_ag1)) do A
         broadcast_dims!(identity, view(A, Ti=1500..1600), view(A, Ti=At(1600)))
